@@ -1,0 +1,8 @@
+{
+  "name": "plataforma-dados",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [4000, 5173],
+  "postCreateCommand": "cd backend && npm install"
+}
