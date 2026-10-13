@@ -3,6 +3,6 @@ import { env } from "./env";
 
 export async function connectDb() {
   mongoose.set("strictQuery", true);
-  await mongoose.connect(env.MONGODB_URI);
+  await mongoose.connect(env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
   console.log("MongoDB conectado");
 }

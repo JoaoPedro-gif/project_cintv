@@ -6,7 +6,7 @@ const schema = new Schema({
   resourceType: String,
   resourceId: String,
   metadata: Schema.Types.Mixed,
-  createdAt: { type: Date, default: Date.now, index: true },
+  createdAt: { type: Date, default: Date.now },
 });
 // Retenção: 2 anos (ajuste conforme a política da empresa)
 schema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 730 });
