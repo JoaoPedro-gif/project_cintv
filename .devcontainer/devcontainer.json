@@ -4,5 +4,6 @@
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "forwardPorts": [4000, 5173],
-  "postCreateCommand": "cd backend && npm install"
+  "postCreateCommand": "cd backend && npm install && cd ../frontend && npm install",
+  "postStartCommand": "bash .devcontainer/start.sh"
 }
