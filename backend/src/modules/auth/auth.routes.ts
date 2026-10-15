@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import argon2 from 'argon2';
 import crypto from 'crypto';
+import dns from 'dns/promises';
 import QRCode from 'qrcode';
 import { authenticator } from 'otplib';
 import { env } from '../../config/env';
@@ -11,7 +12,7 @@ import { audit } from '../../models/AuditLog';
 import { decrypt, encrypt, sha256 } from '../../utils/crypto';
 import { asyncHandler, validate } from '../../utils/http';
 import { requireAuth } from '../../middlewares/auth';
-import { loginLimiter } from '../../middlewares/security';
+import { loginLimiter, lookupLimiter } from '../../middlewares/security';
 import { codeSchema, loginSchema, registerSchema } from './auth.validators';
 
 authenticator.options = { window: 1 };
@@ -47,6 +48,12 @@ async function finishLogin(req: Request, res: Response, user: any) {
   res.json({ ok: true });
 }
 
+// true = domínio recebe e-mail, false = não existe, null = não deu para verificar agora
+async function domainAcceptsMail(domain: string): Promise<boolean | null> {
+  try { return (await dns.resolveMx(domain)).length > 0; }
+  catch (e: any) { return ['ENOTFOUND', 'ENODATA'].includes(e.code) ? false : null; }
+}
+
 authRouter.get('/csrf', (req, res) => {
   req.session.csrf ??= crypto.randomBytes(32).toString('hex');
   res.json({ csrfToken: req.session.csrf });
@@ -64,16 +71,36 @@ authRouter.get('/registration-options', asyncHandler(async (_req, res) => {
   })));
 }));
 
+// Verificação antecipada do e-mail (domínio existe e recebe mensagens)
+authRouter.get('/check-email', lookupLimiter, asyncHandler(async (req, res) => {
+  const email = String(req.query.email ?? '').trim().toLowerCase();
+  const m = /^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/.exec(email);
+  if (!m) return void res.status(400).json({ message: 'E-mail inválido' });
+  if (env.ALLOWED_EMAIL_DOMAIN && m[1] !== env.ALLOWED_EMAIL_DOMAIN)
+    return void res.status(400).json({ message: `Use o e-mail corporativo (@${env.ALLOWED_EMAIL_DOMAIN})` });
+  const mail = await domainAcceptsMail(m[1]);
+  if (mail === null) return void res.json({ ok: true, checked: false });
+  if (!mail) return void res.status(400).json({ message: 'Este domínio não existe ou não recebe e-mails. Confira o endereço.' });
+  res.json({ ok: true, checked: true });
+}));
+
 authRouter.post('/register', loginLimiter, validate(registerSchema), asyncHandler(async (req, res) => {
   const b = req.body;
   if (env.ALLOWED_EMAIL_DOMAIN && !b.email.endsWith('@' + env.ALLOWED_EMAIL_DOMAIN))
     return void res.status(400).json({ message: `Use o e-mail corporativo (@${env.ALLOWED_EMAIL_DOMAIN})` });
+  // confere se o arquivo é mesmo um JPEG (assinatura FF D8 FF), sem confiar só no texto enviado
+  if (b.avatar && Buffer.from(b.avatar.split(',')[1], 'base64').subarray(0, 3).toString('hex') !== 'ffd8ff')
+    return void res.status(400).json({ message: 'Foto de perfil inválida' });
+  const mail = await domainAcceptsMail(b.email.split('@')[1]);
+  if (mail === null) return void res.status(503).json({ message: 'Não foi possível verificar o e-mail agora. Tente novamente em instantes.' });
+  if (!mail) return void res.status(400).json({ message: 'Este e-mail não existe ou o domínio não recebe mensagens. Confira o endereço.' });
+
   const role = await Role.findOne({ _id: b.roleId, departmentId: b.departmentId, isPublic: true, isActive: true });
   if (!role) return void res.status(400).json({ message: 'Departamento ou função inválidos' });
   if (await User.exists({ email: b.email })) return void res.status(409).json({ message: 'E-mail já cadastrado' });
 
   const user = await User.create({
-    fullName: b.fullName, nickname: b.nickname, email: b.email,
+    fullName: b.fullName, nickname: b.nickname, email: b.email, avatar: b.avatar,
     departmentId: b.departmentId, roleId: role._id,
     passwordHash: await argon2.hash(b.password, { type: argon2.argon2id }),
     isApproved: !env.REQUIRE_ADMIN_APPROVAL,
@@ -127,7 +154,10 @@ authRouter.post('/login/2fa', loginLimiter, validate(codeSchema), asyncHandler(a
 authRouter.post('/logout', (req, res) =>
   req.session.destroy(() => { res.clearCookie('sid'); res.json({ ok: true }); }));
 
-authRouter.get('/me', requireAuth, (req, res) => res.json({ user: req.user }));
+authRouter.get('/me', requireAuth, asyncHandler(async (req, res) => {
+  const u = await User.findById(req.user!.id).select('+avatar').lean();
+  res.json({ user: { ...req.user, avatar: u?.avatar ?? null } });
+}));
 
 // Configuração do 2FA: o segredo só vai ao banco depois que o usuário confirma um código válido
 authRouter.post('/2fa/setup', requireAuth, asyncHandler(async (req, res) => {

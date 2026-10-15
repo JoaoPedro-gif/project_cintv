@@ -5,6 +5,7 @@ const schema = new Schema(
     fullName: { type: String, required: true, trim: true },
     nickname: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    avatar: { type: String, select: false },
     passwordHash: { type: String, required: true, select: false },
     departmentId: { type: Schema.Types.ObjectId, ref: 'Department', required: true, index: true },
     roleId: { type: Schema.Types.ObjectId, ref: 'Role', required: true },

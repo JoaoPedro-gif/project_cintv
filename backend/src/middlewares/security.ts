@@ -2,17 +2,19 @@ import crypto from 'crypto';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import rateLimit from 'express-rate-limit';
+import mongoose from 'mongoose';
 import { RequestHandler } from 'express';
 import { env } from '../config/env';
 
 const EIGHT_HOURS = 8 * 60 * 60;
 
-export const sessionMiddleware = session({
+// criada só depois que o banco conectou, reaproveitando a mesma conexão do Mongoose
+export const makeSessionMiddleware = () => session({
   name: 'sid',
   secret: env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: env.MONGODB_URI, ttl: EIGHT_HOURS }),
+  store: MongoStore.create({ client: mongoose.connection.getClient() as any, ttl: EIGHT_HOURS }),
   cookie: { httpOnly: true, sameSite: 'lax', secure: env.NODE_ENV === 'production', maxAge: EIGHT_HOURS * 1000 },
 });
 
@@ -29,4 +31,9 @@ export const csrfProtection: RequestHandler = (req, res, next) => {
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false,
   message: { message: 'Muitas tentativas. Tente novamente em alguns minutos.' },
+});
+
+export const lookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false,
+  message: { message: 'Muitas verificações. Aguarde alguns minutos.' },
 });
