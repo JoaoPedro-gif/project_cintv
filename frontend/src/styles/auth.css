@@ -1,0 +1,28 @@
+/* Telas de acesso (login e cadastro): vidro fosco, preto e vermelho */
+@layer components {
+  .auth-screen {
+    @apply relative flex min-h-screen items-center justify-center overflow-hidden p-4 text-white;
+    background-color: #050505;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(220, 38, 38, 0.55), transparent 40%),
+      radial-gradient(circle at 85% 25%, rgba(153, 27, 27, 0.6), transparent 45%),
+      radial-gradient(circle at 70% 90%, rgba(239, 68, 68, 0.4), transparent 45%),
+      radial-gradient(circle at 10% 90%, rgba(69, 10, 10, 0.85), transparent 50%);
+  }
+  .auth-card { @apply w-full max-w-sm rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl backdrop-blur-xl; }
+  .auth-avatar { @apply mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white/70; }
+  .auth-line { @apply flex items-center gap-3 border-b border-white/40 pb-2 transition-colors focus-within:border-brand-400; }
+  .auth-line input, .auth-line select { @apply w-full bg-transparent text-sm text-white outline-none placeholder:text-white/60; }
+  .auth-line select option { @apply bg-neutral-900 text-white; }
+  .auth-btn {
+    @apply w-full cursor-pointer rounded-xl py-3 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-lg shadow-brand-900/50 outline-none focus-visible:ring-2 focus-visible:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-50;
+    background-image: linear-gradient(to right, var(--color-brand-950), var(--color-brand-700), var(--color-brand-500), var(--color-brand-700), var(--color-brand-950));
+    background-size: 200% 100%;
+    background-position: 0% 0%;
+    transition: background-position 0.5s ease;
+  }
+  .auth-btn:hover:not(:disabled), .auth-btn:focus-visible { background-position: 100% 0%; }
+  .auth-error { @apply rounded-lg border border-brand-400/40 bg-brand-500/15 p-3 text-xs text-brand-100; }
+}
+
+@layer components { .auth-line:has(select:disabled) { @apply opacity-50; } }

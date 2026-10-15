@@ -23,7 +23,7 @@ export default function Layout() {
         <nav className="space-y-1">
           {items.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end title={label}
-              className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-brand-600 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
               <Icon size={18} />{!collapsed && label}
             </NavLink>
           ))}

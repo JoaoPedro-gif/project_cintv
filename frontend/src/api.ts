@@ -19,7 +19,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   if (!r.ok) {
     if (r.status === 403 && data.message === 'Token CSRF inválido' && !retried) { resetCsrf(); return api(path, opts, true); }
     const detail = data.errors ? Object.values(data.errors as Record<string, string[]>).flat().join(' · ') : '';
-    throw new ApiError(detail || data.message || 'Erro inesperado', r.status, data.errors);
+    throw new ApiError(detail || data.message || (r.status >= 500 ? 'Servidor indisponível. Tente novamente em instantes.' : 'Erro inesperado'), r.status, data.errors);
   }
   return data;
 }

@@ -35,7 +35,7 @@ export default function Home() {
       <h1 className="text-2xl font-semibold">Olá, {user!.nickname}!</h1>
       <section className="card">
         <h2 className="mb-2 font-semibold">Suas permissões</h2>
-        <div className="flex flex-wrap gap-2">{user!.permissions.map((p) => <span key={p} className="rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">{p}</span>)}</div>
+        <div className="flex flex-wrap gap-2">{user!.permissions.map((p) => <span key={p} className="rounded-full bg-brand-100 px-3 py-1 text-xs text-brand-800 dark:bg-brand-950 dark:text-brand-200">{p}</span>)}</div>
       </section>
       {can('admin:users') && <PendingApprovals />}
     </div>
